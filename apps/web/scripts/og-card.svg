@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Source for the 1200x630 social-share card. Rasterize to public/og.png with gen-og.sh.
+     On-brand colors: primary #7b47c4, accent #f17444, success #1fb37a. Fonts fall back to a
+     system sans (Bricolage/Jakarta aren't installed for rsvg) — layout is the point, not the face. -->
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7b47c4"/>
+      <stop offset="1" stop-color="#4f2a8f"/>
+    </linearGradient>
+    <style>
+      .sans { font-family: "Plus Jakarta Sans", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- Backdrop + soft decorative blobs (clipped by the canvas edges). -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1110" cy="90" r="280" fill="#f17444" opacity="0.18"/>
+  <circle cx="1180" cy="600" r="190" fill="#1fb37a" opacity="0.16"/>
+  <circle cx="120" cy="560" r="150" fill="#ffffff" opacity="0.05"/>
+
+  <!-- Wordmark: split + dimmed free (matches the in-app hero). -->
+  <text x="80" y="132" class="sans" font-size="54" font-weight="800" letter-spacing="-1">
+    <tspan fill="#ffffff">split</tspan><tspan fill="#ffffff" opacity="0.62">free</tspan>
+  </text>
+
+  <!-- Headline. -->
+  <text x="80" y="300" class="sans" font-size="56" font-weight="800" letter-spacing="-1.5" fill="#ffffff">Share expenses with friends.</text>
+  <text x="80" y="372" class="sans" font-size="56" font-weight="800" letter-spacing="-1.5" fill="#ffffff">Settle up in the fewest payments.</text>
+
+  <!-- Subhead. -->
+  <text x="80" y="442" class="sans" font-size="28" font-weight="500" fill="#ffffff" opacity="0.82">A free, open-source bill-splitting app you can host yourself.</text>
+
+  <!-- Feature pills. -->
+  <g class="sans" font-size="24" font-weight="600" fill="#ffffff">
+    <rect x="80"  y="510" width="196" height="56" rx="28" fill="#ffffff" opacity="0.14"/>
+    <text x="178" y="546" text-anchor="middle">Always free</text>
+    <rect x="292" y="510" width="148" height="56" rx="28" fill="#ffffff" opacity="0.14"/>
+    <text x="366" y="546" text-anchor="middle">No ads</text>
+    <rect x="456" y="510" width="232" height="56" rx="28" fill="#ffffff" opacity="0.14"/>
+    <text x="572" y="546" text-anchor="middle">Self-hostable</text>
+  </g>
+</svg>

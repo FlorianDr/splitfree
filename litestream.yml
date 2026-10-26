@@ -1,0 +1,21 @@
+# Litestream: continuous replication of the SQLite DB to S3-compatible object storage. Mount it at
+# /etc/litestream.yml in a Litestream container that shares the app's /data: `replicate` alongside the
+# app, and `restore -if-db-not-exists -if-replica-exists /data/splitfree.db` before it starts.
+#
+# ${VAR} values are expanded by Litestream from the container env (.env.production). Credentials are
+# read from LITESTREAM_ACCESS_KEY_ID / LITESTREAM_SECRET_ACCESS_KEY and never written here.
+
+# Full snapshot daily; keep 7 days, i.e. point-in-time restore anywhere in the last week.
+snapshot:
+  interval: 24h
+  retention: 168h
+
+dbs:
+  - path: /data/splitfree.db
+    replica:
+      type: s3
+      bucket: ${LITESTREAM_BUCKET}
+      path: splitfree.db
+      endpoint: ${LITESTREAM_ENDPOINT}
+      region: ${LITESTREAM_REGION}
+      force-path-style: true

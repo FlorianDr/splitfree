@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline · splitfree</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        background: #ffffff;
+        color: #23262b;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        text-align: center;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #16171a;
+          color: #f5f5f6;
+        }
+      }
+      img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 1rem 0 0.25rem;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        color: #6b7280;
+        max-width: 28rem;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        color: #ffffff;
+        background: #7b47c4;
+        border: 0;
+        border-radius: 0.625rem;
+        padding: 0.625rem 1.25rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icon-192.png" alt="splitfree" width="72" height="72" />
+      <h1>You're offline</h1>
+      <p>splitfree needs a connection to load your bills and balances. Reconnect and try again.</p>
+      <button type="button" onclick="location.reload()">Retry</button>
+    </main>
+  </body>
+</html>

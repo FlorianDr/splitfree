@@ -1,0 +1,16 @@
+**/node_modules
+**/build
+**/.react-router
+**/test-results
+**/playwright-report
+**/.cache
+# Never copy local databases or backups into the build context (the bind mount default is ./data).
+**/*.db
+**/*.db-shm
+**/*.db-wal
+data/
+**/backups/
+e2e.db*
+.git
+.env*
+**/.DS_Store

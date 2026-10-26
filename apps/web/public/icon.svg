@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="splitfree">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a57d4" />
+      <stop offset="1" stop-color="#6d3cb8" />
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed brand tile (opaque; iOS masks to a squircle, Android may mask too). -->
+  <rect width="512" height="512" fill="url(#bg)" />
+  <!-- A division sign ("split") — bar + two dots, the lower one in the brand orange accent. -->
+  <circle cx="256" cy="150" r="40" fill="#ffffff" />
+  <rect x="106" y="240" width="300" height="32" rx="16" fill="#ffffff" />
+  <circle cx="256" cy="362" r="40" fill="#f17444" />
+</svg>

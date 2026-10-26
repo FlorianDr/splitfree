@@ -1,0 +1,39 @@
+name: splitfree
+
+services:
+  app:
+    build: .
+    image: splitfree
+    ports:
+      - "3000:3000"
+    environment:
+      # Required — set these in a .env next to this file or your shell.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      # Outgoing email (see .env.example), e.g. Resend: smtp.resend.com, user "resend", the API key.
+      SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURITY: ${SMTP_SECURITY:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # Optional Cloudflare Turnstile bot check on email sign-in; unset = off.
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      OTP_FROM_EMAIL: ${OTP_FROM_EMAIL:-splitfree <login@splitfree.cash>}
+      # WebAuthn: RP_ID is the bare domain, ORIGIN the full https URL. Must match your reverse proxy.
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:?set WEBAUTHN_RP_ID}
+      WEBAUTHN_RP_NAME: ${WEBAUTHN_RP_NAME:-splitfree}
+      WEBAUTHN_ORIGIN: ${WEBAUTHN_ORIGIN:?set WEBAUTHN_ORIGIN}
+      DATABASE_PATH: /data/splitfree.db
+    # Bind mount, NOT a named volume: the DB lives at ${DATA_DIR:-./data} on the host — visible,
+    # trivially backed up, and impossible to wipe with `docker compose down -v`.
+    volumes:
+      - ${DATA_DIR:-./data}:/data
+    # Give SQLite time to checkpoint the WAL on shutdown before SIGKILL.
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped

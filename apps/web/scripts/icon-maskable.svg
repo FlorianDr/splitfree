@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="splitfree">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a57d4" />
+      <stop offset="1" stop-color="#6d3cb8" />
+    </linearGradient>
+  </defs>
+  <!-- Maskable variant: full-bleed background, glyph shrunk into the central safe zone
+       (Android adaptive icons crop up to the outer ~20%). -->
+  <rect width="512" height="512" fill="url(#bg)" />
+  <circle cx="256" cy="182" r="28" fill="#ffffff" />
+  <rect x="151" y="245" width="210" height="22" rx="11" fill="#ffffff" />
+  <circle cx="256" cy="330" r="28" fill="#f17444" />
+</svg>

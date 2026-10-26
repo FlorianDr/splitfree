@@ -1,0 +1,184 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * splitfree brand theme.
+ *   Primary / CTA  #7B47C4 (white text)
+ *   Brand accent   #F17444 (decorative only, non-semantic)
+ *   Success        #1FB37A (dark ink text)
+ *   Warning        #F5A623 (dark ink text)
+ *   Error          #E5484D (white text)
+ *   Ink            #23262B
+ * Fonts: Bricolage Grotesque (headlines) + Plus Jakarta Sans (body/UI).
+ */
+:root {
+  --radius: 0.625rem;
+
+  --background: #ffffff;
+  --foreground: #23262b;
+
+  --card: #ffffff;
+  --card-foreground: #23262b;
+  --popover: #ffffff;
+  --popover-foreground: #23262b;
+
+  --primary: #7b47c4;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f4f1fb;
+  --secondary-foreground: #3a2a55;
+
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+
+  --accent: #f4f1fb;
+  --accent-foreground: #3a2a55;
+
+  --destructive: #e5484d;
+  --destructive-foreground: #ffffff;
+
+  --success: #1fb37a;
+  --success-foreground: #0c2c20;
+  --warning: #f5a623;
+  --warning-foreground: #23262b;
+
+  /* Decorative brand accent — never used for semantic state. */
+  --brand: #f17444;
+
+  --border: #e7e7ea;
+  --input: #e7e7ea;
+  --ring: #7b47c4;
+}
+
+.dark {
+  --background: #16171a;
+  --foreground: #f5f5f6;
+
+  --card: #1d1f23;
+  --card-foreground: #f5f5f6;
+  --popover: #1d1f23;
+  --popover-foreground: #f5f5f6;
+
+  --primary: #9a6fe0;
+  --primary-foreground: #1a1023;
+
+  --secondary: #26222f;
+  --secondary-foreground: #e9e4f5;
+
+  --muted: #26282d;
+  --muted-foreground: #a1a6b0;
+
+  --accent: #26222f;
+  --accent-foreground: #e9e4f5;
+
+  --destructive: #e5484d;
+  --destructive-foreground: #ffffff;
+
+  --success: #2bd28f;
+  --success-foreground: #07241a;
+  --warning: #f5a623;
+  --warning-foreground: #23262b;
+
+  --brand: #f17444;
+
+  --border: #2c2f35;
+  --input: #2c2f35;
+  --ring: #9a6fe0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-brand: var(--brand);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/*
+ * Page transitions. In-app <Link viewTransition>s wrap the route change in a view transition: the
+ * header (named `app-header` in app-nav.tsx) stays put while the page below cross-fades with a small
+ * rise. Off for reduced motion, and while the browser runs its own back-swipe animation
+ * (data-ua-transition, set in root.tsx).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 120ms ease-in both page-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation: 220ms cubic-bezier(0.2, 0, 0, 1) both page-rise-in;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+:root[data-ua-transition]::view-transition-group(*),
+:root[data-ua-transition]::view-transition-old(*),
+:root[data-ua-transition]::view-transition-new(*) {
+  animation: none !important;
+}
+
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

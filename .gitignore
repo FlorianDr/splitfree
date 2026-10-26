@@ -1,0 +1,30 @@
+.DS_Store
+node_modules/
+*.log
+
+# React Router
+apps/web/.react-router/
+apps/web/build/
+
+# Local data + secrets (.env, .env.production, …; the examples are committed)
+.env*
+!.env.example
+!.env.production.example
+*.db
+*.db-shm
+*.db-wal
+/data/
+e2e.db*
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/.cache/
+
+# Private to the maintainer's deployment / local tooling (kept on disk, never published)
+.claude
+docs/
+backups/
+systemd/
+deploy.sh
