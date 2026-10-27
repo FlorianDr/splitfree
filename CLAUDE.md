@@ -57,6 +57,11 @@ Minimizing settle-up transactions is the NP-hard "debts'-clearing / minimum-cash
 balance, repeatedly match the largest creditor with the largest-magnitude debtor transferring
 `min(|c|, |d|)`. Always settles everyone to zero; emits **≤ n−1** transfers. See `packages/ledger`.
 
+`/settle` plans over the viewer's **circle** (everyone linked through bills and payments, transitively:
+`listSettleCircle`, then the `getNetBalances` aggregate), never just the viewer's own bills. Otherwise,
+when no one is on every bill, members get contradicting plans and net creditors are told to pay
+(`tests/e2e/settle.spec.ts`). People outside the viewer's shared history are shown by email.
+
 ## Commands
 - `pnpm test` — run the ledger unit suite (`node:test`) with coverage.
 - `pnpm --filter web dev` — run the web app in dev.

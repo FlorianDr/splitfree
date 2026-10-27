@@ -1,4 +1,4 @@
-import type { BillInput, PaymentInput } from "@splitfree/ledger";
+import type { Cents, Currency } from "@splitfree/ledger";
 import type { IpBuckets } from "~/lib/client-ip.server";
 import { type InviteCounts, type OtpCounts, utcDayStart } from "~/lib/auth/otp-limits.server";
 import { randomBytes } from "node:crypto";
@@ -372,25 +372,62 @@ export function listPaymentsForContact(contactId: string): Payment[] {
 }
 
 /**
- * Fetch everything the ledger needs to derive balances for a contact: all their bills (shaped as
- * ledger BillInput) and all payments involving them (shaped as ledger PaymentInput). The pure
- * functions in @splitfree/ledger then compute pairwise balances and the settle-up plan.
+ * Everyone linked to `contactId` through bills and payments, transitively (the contact included),
+ * sorted by id. A settle-up plan is only correct over a whole circle: a person's net balance includes
+ * bills the viewer is not on, so planning over the viewer's own bills tells net creditors to pay.
  */
-export function getLedgerInputsForContact(contactId: string): {
-  bills: BillInput[];
-  payments: PaymentInput[];
-} {
-  const bills = listBillsForContact(contactId).map<BillInput>((b) => ({
-    currency: b.currency,
-    participants: b.participants,
-  }));
-  const payments = listPaymentsForContact(contactId).map<PaymentInput>((p) => ({
-    currency: p.currency,
-    fromContactId: p.fromContactId,
-    toContactId: p.toContactId,
-    amountCents: p.amountCents,
-  }));
-  return { bills, payments };
+export function listSettleCircle(contactId: string): string[] {
+  const rows = getDb()
+    .prepare(
+      `WITH RECURSIVE circle(id) AS (
+         SELECT ?
+         UNION
+         SELECT other.contact_id
+           FROM circle
+           JOIN bill_participants mine  ON mine.contact_id = circle.id
+           JOIN bill_participants other ON other.bill_id = mine.bill_id
+         UNION
+         SELECT p.to_contact_id FROM circle JOIN payments p ON p.from_contact_id = circle.id
+         UNION
+         SELECT p.from_contact_id FROM circle JOIN payments p ON p.to_contact_id = circle.id
+       )
+       SELECT id FROM circle ORDER BY id`,
+    )
+    .all(contactId) as { id: string }[];
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Net balance per currency of each of `contactIds`: paid − owed on bills, plus payments made − received.
+ * Zero balances are left out. Same result as the ledger's `computeNetBalances`, as a SQL aggregate.
+ */
+export function getNetBalances(contactIds: string[]): Map<Currency, Map<string, Cents>> {
+  const ids = JSON.stringify(contactIds);
+  const rows = getDb()
+    .prepare(
+      `SELECT contact_id, currency, SUM(delta) AS net FROM (
+         SELECT bp.contact_id, b.currency, bp.paid_cents - bp.owed_cents AS delta
+           FROM bill_participants bp JOIN bills b ON b.id = bp.bill_id
+          WHERE bp.contact_id IN (SELECT value FROM json_each(?))
+         UNION ALL
+         SELECT from_contact_id, currency, amount_cents FROM payments
+          WHERE from_contact_id IN (SELECT value FROM json_each(?))
+         UNION ALL
+         SELECT to_contact_id, currency, -amount_cents FROM payments
+          WHERE to_contact_id IN (SELECT value FROM json_each(?))
+       )
+       GROUP BY contact_id, currency
+       HAVING net <> 0
+       ORDER BY currency, contact_id`,
+    )
+    .all(ids, ids, ids) as { contact_id: string; currency: string; net: number }[];
+  const net = new Map<Currency, Map<string, Cents>>();
+  for (const r of rows) {
+    let inner = net.get(r.currency);
+    if (inner === undefined) net.set(r.currency, (inner = new Map()));
+    inner.set(r.contact_id, r.net);
+  }
+  return net;
 }
 
 // ---------------------------------------------------------------------------
