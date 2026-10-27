@@ -8,7 +8,7 @@ test("participant autosuggest matches a previously-used contact by display name"
   await loginAs(page, "henry@example.com");
   await page.goto("/settings", { waitUntil: "networkidle" }); // typed input needs a hydrated form
   await page.getByLabel("Display name").fill("Bob Builder");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Settings saved")).toBeVisible();
 
   // Grace shares a bill with Henry, so he becomes one of her known contacts.

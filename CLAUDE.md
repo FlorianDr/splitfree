@@ -53,9 +53,21 @@ deliberately isomorphic (safe in the browser for live split previews) and is NOT
 
 ## The debt-simplification math
 Minimizing settle-up transactions is the NP-hard "debts'-clearing / minimum-cash-flow" problem
-(reduces to subset-sum). We ship the standard **greedy net-balance heuristic**: net each person's
-balance, repeatedly match the largest creditor with the largest-magnitude debtor transferring
-`min(|c|, |d|)`. Always settles everyone to zero; emits **≤ n−1** transfers. See `packages/ledger`.
+(reduces to subset-sum). Groups are small, so we solve it **exactly**: net each person's balance, split
+everyone into the most groups that each sum to zero (subset DP over all 2^n subsets), then settle each
+group by matching the largest creditor with the largest-magnitude debtor (`min(|c|, |d|)`). n people in
+k groups need n − k transfers, which is the minimum. Largest-first matching alone is not minimal: a
+partly paid plan creates zero-sum groups it misses, so recomputing after each payment added transfers.
+Above `EXACT_SEARCH_LIMIT` (20 nonzero balances per currency, ~36 ms) it falls back to matching alone
+(≤ n−1). See `packages/ledger/src/simplify.ts`.
+
+The settle-up plan covers the viewer's **circle** (everyone linked through bills and payments,
+transitively: `listSettleCircle`, then the `getNetBalances` aggregate), never just the viewer's own
+bills. Otherwise, when no one is on every bill, members get contradicting plans and net creditors are
+told to pay (`tests/e2e/settle.spec.ts`). Each person sees **only their own transfers**
+(`lib/settle.server.ts` `mySettleTransfers`): on `/settle`, on home (default "Simplified"; "All
+balances" = `?view=all`, the pairwise list) and on a person's page. Never list other people's
+transfers. A counterparty outside the viewer's shared history is shown by email.
 
 ## Commands
 - `pnpm test` — run the ledger unit suite (`node:test`) with coverage.
@@ -102,6 +114,20 @@ A group (`split_groups` + `split_group_members`, migration 0004) is a shared, na
 - **Join link:** 32 random bytes, valid four weeks (`JOIN_LINK_TTL_SECONDS`), reset = new token.
   Opening it never joins (the POST behind "Join group" does). Signed-out visitors go through
   `/login?redirectTo=…` (`requireUser` adds it for GETs; `lib/redirect.ts` keeps it same-site).
+
+## Payment details
+A person can add an IBAN and a Wero link in Settings so others can pay them back (`contacts.iban`,
+`contacts.wero_link`, migration 0005). They're saved in one form together with the display name, which
+doubles as the account holder name, and only that contact's own user ever writes them.
+- Checks live in `lib/iban.ts` and `lib/wero.ts` (isomorphic: in the form, again in the action). IBAN:
+  SEPA countries only (EPC country list), per-country length, ISO 7064 mod-97; with an IBAN the name is
+  required and fits a SEPA transfer (payer banks run Verification of Payee on name vs IBAN).
+- **Never store or render a typed link.** `parseWeroLink` rebuilds the Wero link from an allowed host
+  (`share.wero-wallet.eu`, `share.weropay.eu`), path kind and token, so nobody can plant `evil.com`.
+  Wero ignores amount parameters (`?a=…&c=EUR`, tried with a Revolut link), so settle-up offers the
+  amount to copy instead.
+- Changes are audited (`iban.update`/`iban.remove` with country + last 4 only, `wero.update`/`wero.remove`).
+- Shown only on settle-up rows where the viewer is the one paying (`routes/settle.tsx`); never in emails.
 
 ## Outbound email limits (bot protection)
 A bot once used `/login` to make us email codes to arbitrary addresses. Every outbound email is now

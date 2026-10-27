@@ -33,7 +33,11 @@ export type AuditEvent =
   | "group.join"
   | "group.link.reset"
   | "group.link.off"
-  | "group.link.on";
+  | "group.link.on"
+  | "iban.update"
+  | "iban.remove"
+  | "wero.update"
+  | "wero.remove";
 
 const ipHeader = env.CLIENT_IP_HEADER?.toLowerCase();
 const warnHourly = createThrottle(60 * 60_000);

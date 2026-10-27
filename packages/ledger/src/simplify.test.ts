@@ -163,6 +163,68 @@ test("simplify: ties broken deterministically by contactId", () => {
   assert.equal(first.length, 2);
 });
 
+test("simplify: finds the minimum where largest-first matching does not", () => {
+  // {B:+5, D:-5} and {A:+8, C:-7, E:-1} each sum to zero, so 3 transfers settle everyone. Matching the
+  // largest creditor with the largest debtor (A with C) splits D across two creditors: 4 transfers.
+  const net = netFrom({ EUR: { A: 800, B: 500, C: -700, D: -500, E: -100 } });
+  const transfers = simplifyDebts(net);
+  assertAllZero(applyTransfers(net, transfers));
+  assert.equal(transfers.length, 3);
+  assert.deepEqual(
+    transfers.find((t) => t.fromContactId === "D"),
+    { fromContactId: "D", toContactId: "B", currency: "EUR", amountCents: 500 },
+  );
+});
+
+/** The true minimum for one currency: n − the most disjoint zero-sum groups, by brute force. */
+function bruteForceMinimum(values: Cents[]): number {
+  const nonZero = values.filter((v) => v !== 0);
+  const best = (rest: Cents[]): number => {
+    if (rest.length === 0) return 0;
+    // The group holding rest[0]: try every subset of the others that makes it sum to zero.
+    const [first = 0, ...others] = rest;
+    let most = 0;
+    for (let mask = 0; mask < 1 << others.length; mask++) {
+      let sum = first;
+      others.forEach((v, i) => {
+        if (mask & (1 << i)) sum += v;
+      });
+      if (sum !== 0) continue;
+      most = Math.max(most, 1 + best(others.filter((_, i) => !(mask & (1 << i)))));
+    }
+    return most;
+  };
+  return nonZero.length - best(nonZero);
+}
+
+test("simplify: randomized cases use exactly the minimum number of transfers", () => {
+  let seed = 0x2545f491;
+  const rand = (n: number): number => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed % n;
+  };
+  for (let iter = 0; iter < 300; iter++) {
+    const count = 2 + rand(9);
+    // Small amounts so zero-sum groups are common, the case where greedy alone over-pays.
+    const values: Cents[] = [];
+    for (let i = 0; i < count - 1; i++) values.push((rand(9) - 4) * 100);
+    values.push(0 - values.reduce((a, b) => a + b, 0)); // 0 − x, never −0
+    const net = netFrom({ EUR: Object.fromEntries(values.map((v, i) => [`p${i}`, v])) });
+    const transfers = simplifyDebts(net);
+    assertAllZero(applyTransfers(net, transfers));
+    assert.equal(transfers.length, bruteForceMinimum(values), `balances ${values.join(", ")}`);
+  }
+});
+
+test("simplify: above the exact-search limit it still settles everyone with <= n-1 transfers", () => {
+  const balances: Record<string, Cents> = {};
+  for (let i = 0; i < 30; i++) balances[`p${String(i).padStart(2, "0")}`] = i % 2 === 0 ? 1000 + i : -(1000 + i - 1);
+  const net = netFrom({ EUR: balances });
+  const transfers = simplifyDebts(net);
+  assertAllZero(applyTransfers(net, transfers));
+  assert.ok(transfers.length <= 29);
+});
+
 test("simplify: ignores zero balances mixed with nonzero", () => {
   const net = netFrom({ EUR: { A: 100, Z: 0, B: -100 } });
   const transfers = simplifyDebts(net);

@@ -5,10 +5,10 @@ import { pageMeta } from "~/lib/meta";
 // NOTE: This is a plain-language starter template, not legal advice — have it reviewed before
 // relying on it. Contact: code@dreschner.eu. Keep the "Self-hosting" section honest for how your
 // specific instance is run. This Policy is written to match what the app actually stores: account
-// email, an optional display name, passkey public keys, the shared-expense data you enter (bills,
+// email, an optional display name, optional payment details (IBAN, Wero link), passkey public keys, the shared-expense data you enter (bills,
 // who paid/owes, payments and their notes), the contacts you add by email, and a security/audit log
 // that records IP addresses. If you change what your instance logs, update §1 and §4 to match.
-const LAST_UPDATED = "October 26, 2026";
+const LAST_UPDATED = "October 27, 2026";
 
 // Where users send rights requests (access, export, deletion) and any privacy question. These
 // actions are handled manually over email — there is no self-service delete/export in the app yet.
@@ -18,7 +18,7 @@ export function meta({ matches }: Route.MetaArgs) {
   return pageMeta(matches, {
     title: "Privacy Policy",
     description:
-      "How splitfree handles your data: your email, optional display name, the shared expenses you enter, and a security log.",
+      "How splitfree handles your data: your email, optional display name and payment details, the shared expenses you enter, and a security log.",
     path: "/privacy",
   });
 }
@@ -43,6 +43,12 @@ export default function Privacy() {
           <strong>An optional display name</strong> — if you set one, it is shown to the other
           people you share expenses with instead of your email. You can change or clear it at any
           time in Settings.
+        </li>
+        <li>
+          <strong>Optional payment details</strong> — if you enter them in Settings: your IBAN (with
+          your display name as the account holder's name) and your Wero payment link, so the people
+          you share expenses with can pay you back. They are shown only to people who owe you money,
+          and you can change or remove them at any time in Settings.
         </li>
         <li>
           <strong>Passkey public keys</strong> — if you choose to register a passkey, we store its
@@ -183,7 +189,7 @@ export default function Privacy() {
 
       <h2>6. How long we keep it</h2>
       <p>
-        We keep your account email, display name, passkey credentials, and your shared-expense data
+        We keep your account email, display name, payment details, passkey credentials, and your shared-expense data
         for as long as your account is active. Security-log entries (including IP addresses) are
         kept for 90 days, and sign-in and email-limit records for 2 days, for security and
         abuse-prevention purposes; they may be retained longer where we need them to comply with a
@@ -200,7 +206,7 @@ export default function Privacy() {
       <p>
         Depending on where you live, you may have the right to access, correct, export, or delete
         your personal data, to object to or restrict its processing, and to unsubscribe from update
-        emails. You can edit or clear your display name and manage your passkeys yourself in
+        emails. You can edit or clear your display name and payment details and manage your passkeys yourself in
         Settings. For everything else — including account deletion, a copy of your data, or any
         other request above — email us at{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and we will action it. You also have

@@ -7,12 +7,14 @@ import init0001 from "./migrations/0001_init.sql?raw";
 import audit0002 from "./migrations/0002_audit_log.sql?raw";
 import emailSends0003 from "./migrations/0003_email_sends.sql?raw";
 import groups0004 from "./migrations/0004_groups.sql?raw";
+import paymentDetails0005 from "./migrations/0005_payment_details.sql?raw";
 
 const MIGRATIONS: ReadonlyArray<{ name: string; sql: string }> = [
   { name: "0001_init", sql: init0001 },
   { name: "0002_audit_log", sql: audit0002 },
   { name: "0003_email_sends", sql: emailSends0003 },
   { name: "0004_groups", sql: groups0004 },
+  { name: "0005_payment_details", sql: paymentDetails0005 },
 ];
 
 /** Idempotently apply any not-yet-applied migrations, each in its own transaction. */
