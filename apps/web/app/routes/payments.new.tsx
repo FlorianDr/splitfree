@@ -8,8 +8,8 @@ import {
   getContactsByIds,
   listBillsForContact,
   listPaymentsForContact,
-  listSettleCircle,
 } from "~/lib/db/queries.server";
+import { simplifiedBalances } from "~/lib/settle.server";
 import { numberSeparators, parseCents } from "~/lib/amount";
 import { audit } from "~/lib/audit.server";
 import { flashCookie } from "~/lib/flash.server";
@@ -38,14 +38,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   }));
 
   const url = new URL(request.url);
-  // A settle-up row can pair me with someone from my circle I share no bill with (settle.tsx): offer
-  // them too, by email only (A01, people.server.ts).
+  // A settle-up row can pair me with someone from my circle I share no bill with (settle.server.ts):
+  // offer my own counterparties too, by email only (A01, people.server.ts).
   const linked = [url.searchParams.get("from"), url.searchParams.get("to")].filter(
     (id): id is string => !!id && !ids.has(id),
   );
   if (linked.length > 0) {
-    const circle = new Set(listSettleCircle(contact.id));
-    for (const c of getContactsByIds(linked.filter((id) => circle.has(id))).values()) {
+    const counterparties = simplifiedBalances(contact.id);
+    for (const c of getContactsByIds(linked.filter((id) => counterparties.has(id))).values()) {
       list.push({ id: c.id, name: c.email });
     }
   }

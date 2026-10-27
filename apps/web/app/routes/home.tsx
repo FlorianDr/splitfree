@@ -2,12 +2,14 @@ import { computePairwiseBalances } from "@splitfree/ledger";
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { ActivityList, type ActivityItem } from "~/components/activity-list";
-import { BalanceList } from "~/components/balance-list";
+import { BalanceList, type BalanceView } from "~/components/balance-list";
 import { Money } from "~/components/money";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { requireUser } from "~/lib/auth/session.server";
 import { pageMeta } from "~/lib/meta";
+import { visibleContacts } from "~/lib/people.server";
+import { simplifiedBalances } from "~/lib/settle.server";
 import {
   getContactsByIds,
   listBillsForContact,
@@ -35,7 +37,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const nameOf = (id: string) =>
     id === me ? "You" : (contacts.get(id)?.displayName ?? contacts.get(id)?.email ?? "Someone");
 
-  // People tab: pairwise balances (only non-zero).
+  // People tab, "All balances": pairwise balances (only non-zero).
   const pairwise = computePairwiseBalances(
     me,
     bills.map((b) => ({ currency: b.currency, participants: b.participants })),
@@ -46,7 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       amountCents: p.amountCents,
     })),
   );
-  const friends = [...pairwise.keys()]
+  const allFriends = [...pairwise.keys()]
     .map((id) => {
       const byCurrency = pairwise.get(id) ?? new Map<string, number>();
       const c = contacts.get(id);
@@ -62,8 +64,25 @@ export async function loader({ request }: Route.LoaderArgs) {
     .filter((f) => f.balances.length > 0)
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // People tab, "Simplified" (the default): only what I actually pay or collect in the settle-up plan.
+  const simplified = simplifiedBalances(me);
+  const people = visibleContacts(me, [...simplified.keys()]);
+  const simplifiedFriends = [...simplified.entries()]
+    .map(([id, byCurrency]) => ({
+      id,
+      name: people.get(id)?.name ?? "Someone",
+      email: people.get(id)?.email ?? "",
+      balances: [...byCurrency.entries()].map(([currency, cents]) => ({ currency, cents })),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const view: BalanceView = new URL(request.url).searchParams.get("view") === "all" ? "all" : "simplified";
+  const friends = view === "all" ? allFriends : simplifiedFriends;
+  const hasBalances = allFriends.length > 0 || simplifiedFriends.length > 0;
+
+  // Both views add up to my net balance; the pairwise one is always complete.
   const totals = new Map<string, number>();
-  for (const f of friends) {
+  for (const f of allFriends) {
     for (const b of f.balances) totals.set(b.currency, (totals.get(b.currency) ?? 0) + b.cents);
   }
   const overall = [...totals.entries()]
@@ -99,12 +118,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     ),
   ].sort((a, b) => b.date - a.date);
 
-  return { friends, overall, activity };
+  return { friends, overall, activity, view, hasBalances };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { friends, overall, activity } = loaderData;
-  const hasFriends = friends.length > 0;
+  const { friends, overall, activity, view, hasBalances } = loaderData;
 
   return (
     <div className="space-y-6">
@@ -134,16 +152,19 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <TabsTrigger value="people">People</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
-          {hasFriends ? (
-            <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link viewTransition to="/settle">Simplify &amp; settle up</Link>
-            </Button>
-          ) : null}
+          {hasBalances ? <ViewToggle view={view} /> : null}
         </div>
 
         <TabsContent value="people">
-          {hasFriends ? (
-            <BalanceList friends={friends} />
+          {friends.length > 0 ? (
+            <BalanceList friends={friends} view={view} />
+          ) : hasBalances ? (
+            <div className="rounded-xl border border-dashed bg-card p-8 text-center">
+              <p className="font-medium">Nothing to pay or collect</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your balances cancel out once everyone settles up.
+              </p>
+            </div>
           ) : (
             <div className="rounded-xl border border-dashed bg-card p-8 text-center">
               <p className="font-medium">No open balances</p>
@@ -173,5 +194,28 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/** Switch the People tab between the simplified plan and every pairwise balance. */
+function ViewToggle({ view }: { view: BalanceView }) {
+  const option = (value: BalanceView, label: string, to: string) => (
+    <Link
+      to={to}
+      replace
+      preventScrollReset
+      aria-current={view === value ? "true" : undefined}
+      className={`rounded-md px-2.5 py-1 transition-colors ${
+        view === value ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+  return (
+    <nav aria-label="Balances" className="flex rounded-lg bg-muted p-0.5 text-xs">
+      {option("simplified", "Simplified", "/")}
+      {option("all", "All balances", "/?view=all")}
+    </nav>
   );
 }

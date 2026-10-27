@@ -7,6 +7,9 @@ export interface FriendBalance {
   cents: number; // +ve => they owe you; -ve => you owe them
 }
 
+/** "simplified": only what you pay or collect in the settle-up plan; "all": every pairwise balance. */
+export type BalanceView = "simplified" | "all";
+
 export interface FriendRow {
   id: string;
   name: string;
@@ -20,13 +23,13 @@ export function initials(name: string): string {
   return (letters || name[0] || "?").toUpperCase();
 }
 
-export function BalanceList({ friends }: { friends: FriendRow[] }) {
+export function BalanceList({ friends, view }: { friends: FriendRow[]; view: BalanceView }) {
   return (
     <ul className="divide-y overflow-hidden rounded-xl border bg-card">
       {friends.map((f) => (
         <li key={f.id}>
           <Link viewTransition
-            to={`/people/${f.id}`}
+            to={view === "all" ? `/people/${f.id}?view=all` : `/people/${f.id}`}
             className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-accent/40"
           >
             <div className="flex min-w-0 items-center gap-3">

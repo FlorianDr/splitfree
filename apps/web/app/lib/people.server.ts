@@ -18,6 +18,23 @@ export function listSharedContacts(contactId: string): Map<string, Contact> {
   return getContactsByIds([...ids]);
 }
 
+/**
+ * How `contactId` may see each of `ids`: the display name within their shared history, otherwise the
+ * email (a settle-up counterparty from the wider circle, see settle.server.ts).
+ */
+export function visibleContacts(
+  contactId: string,
+  ids: string[],
+): Map<string, { name: string; email: string; shared: boolean }> {
+  const shared = listSharedContacts(contactId);
+  const out = new Map<string, { name: string; email: string; shared: boolean }>();
+  for (const c of getContactsByIds(ids).values()) {
+    const s = shared.get(c.id);
+    out.set(c.id, { name: s ? (s.displayName ?? s.email) : c.email, email: c.email, shared: !!s });
+  }
+  return out;
+}
+
 /** Display names by lowercased email for the shared-history contacts, plus yourself. */
 export function namesByEmailFor(me: Contact): Map<string, string> {
   const names = new Map<string, string>();

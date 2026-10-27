@@ -11,6 +11,7 @@ import {
   listBillsForContact,
   listPaymentsForContact,
 } from "~/lib/db/queries.server";
+import { simplifiedBalances } from "~/lib/settle.server";
 
 const fmtDate = (sec: number) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(sec * 1000));
@@ -24,11 +25,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const payments = listPaymentsForContact(contact.id);
 
   // A01: only reveal a person you actually share history with — otherwise any contact's email/name
-  // leaks to anyone holding their (UUID) id. 404 keeps existence undisclosed.
+  // leaks to anyone holding their (UUID) id. 404 keeps existence undisclosed. The one exception is a
+  // settle-up counterparty from the wider circle: shown by email, with just the amount to settle.
   const shared =
     bills.some((b) => b.participants.some((p) => p.contactId === other.id)) ||
     payments.some((p) => p.fromContactId === other.id || p.toContactId === other.id);
-  if (!shared) throw new Response("Not found", { status: 404 });
+  const simplified = simplifiedBalances(contact.id).get(other.id);
+  if (!shared && !simplified) throw new Response("Not found", { status: 404 });
+
+  // Simplified (default): what we settle in the plan. ?view=all: our pairwise balance.
+  const view = new URL(request.url).searchParams.get("view") === "all" ? "all" : "simplified";
 
   // Pairwise balances (reuse the ledger), keyed by currency for this person.
   const pairwise = computePairwiseBalances(
@@ -41,7 +47,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       amountCents: p.amountCents,
     })),
   );
-  const balances = [...(pairwise.get(other.id) ?? new Map<string, number>()).entries()]
+  const balances = [
+    ...((view === "all" ? pairwise.get(other.id) : simplified) ?? new Map<string, number>()).entries(),
+  ]
     .filter(([, cents]) => cents !== 0)
     .map(([currency, cents]) => ({ currency, cents }));
 
@@ -89,7 +97,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     : `/payments/new?from=${contact.id}&to=${other.id}`;
 
   return {
-    other: { id: other.id, name: other.displayName ?? other.email, email: other.email },
+    other: { id: other.id, name: shared ? (other.displayName ?? other.email) : other.email, email: other.email },
+    view,
     balances,
     activity,
     settleHref,
@@ -97,7 +106,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export default function PersonDetail({ loaderData }: Route.ComponentProps) {
-  const { other, balances, activity, settleHref } = loaderData;
+  const { other, view, balances, activity, settleHref } = loaderData;
 
   return (
     <div className="space-y-5">
@@ -115,7 +124,9 @@ export default function PersonDetail({ loaderData }: Route.ComponentProps) {
 
       <div className="rounded-xl border bg-card p-4">
         {balances.length === 0 ? (
-          <p className="text-sm text-muted-foreground">You're all settled up.</p>
+          <p className="text-sm text-muted-foreground">
+            {view === "all" ? "You're all settled up." : `Nothing to settle with ${other.name}.`}
+          </p>
         ) : (
           <div className="space-y-1">
             {balances.map((b) => (
@@ -130,9 +141,23 @@ export default function PersonDetail({ loaderData }: Route.ComponentProps) {
             ))}
           </div>
         )}
-        <Button asChild className="mt-3" size="sm">
-          <Link viewTransition to={settleHref}>Settle up</Link>
-        </Button>
+        <div className="mt-3 flex items-center gap-3">
+          <Button asChild size="sm">
+            <Link viewTransition to={settleHref}>Settle up</Link>
+          </Button>
+          <Link
+            to={view === "all" ? `/people/${other.id}` : `/people/${other.id}?view=all`}
+            replace
+            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+          >
+            {view === "all" ? "Show simplified" : "Show all balances"}
+          </Link>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {view === "all"
+            ? "Everything between the two of you, bill by bill."
+            : "Simplified across everyone you share bills with: the amount that actually changes hands."}
+        </p>
       </div>
 
       <div className="space-y-2">
